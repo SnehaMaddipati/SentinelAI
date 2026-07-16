@@ -1,10 +1,7 @@
+import AppRoutes from "./routes/AppRoutes";
+
 function App() {
-  return (
-    <>
-      <h1>SentinelAI</h1>
-      <p>Autonomous Multi-Agent Security Operations Center</p>
-    </>
-  );
+  return <AppRoutes />;
 }
 
 export default App;
