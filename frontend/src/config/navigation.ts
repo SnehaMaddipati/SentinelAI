@@ -11,7 +11,7 @@ export const navigationItems = [
     icon: DashboardIcon,
   },
   {
-    title: "Upload Logs",
+    title: "Security Log Ingestion",
     path: "/upload-logs",
     icon: UploadFileIcon,
   },
