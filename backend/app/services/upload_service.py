@@ -1,8 +1,9 @@
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
-
+from app.models.enums import InvestigationStatus
 from app.repositories.log_repository import LogRepository
 from app.services.investigation_service import InvestigationService
+from app.services.log_parser_service import LogParserService
 
 
 class UploadService:
@@ -10,6 +11,7 @@ class UploadService:
     def __init__(self):
         self.repository = LogRepository()
         self.investigation_service = InvestigationService()
+        self.log_parser_service = LogParserService()
 
     async def upload_file(
         self,
@@ -41,5 +43,20 @@ class UploadService:
             stored_filename=saved_file.stored_file_name,
             file_size=saved_file.file_size,
         )
+
+        self.log_parser_service.parse_file(
+            db=db,
+            investigation_id=investigation.id,
+            file_path=saved_file.file_path,
+        )
+
+        self.investigation_service.update_status(
+            db=db,
+            investigation=investigation,
+            status=InvestigationStatus.PARSING,
+        )
+
+        db.commit()
+        db.refresh(investigation)
 
         return investigation

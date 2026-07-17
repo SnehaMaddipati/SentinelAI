@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import DateTime, String, BigInteger, Enum
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.enums import InvestigationStatus
 
 from app.database.base import Base
@@ -58,4 +58,9 @@ class Investigation(Base):
         DateTime,
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
+    )
+    log_events = relationship(
+        "LogEvent",
+        back_populates="investigation",
+        cascade="all, delete-orphan",
     )

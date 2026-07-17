@@ -5,12 +5,14 @@ import {
 
 interface UploadActionsProps {
   hasFile: boolean;
+  isUploading: boolean;
   onUpload: () => void;
   onCancel: () => void;
 }
 
 export default function UploadActions({
   hasFile,
+  isUploading,
   onUpload,
   onCancel,
 }: UploadActionsProps) {
@@ -23,21 +25,22 @@ export default function UploadActions({
         justifyContent: "flex-end",
     }}
     >
-      <Button
-        variant="outlined"
-        color="inherit"
-        onClick={onCancel}
-      >
-        Cancel
-      </Button>
+     <Button
+  variant="outlined"
+  color="inherit"
+  disabled={isUploading}
+  onClick={onCancel}
+>
+  Cancel
+</Button>
 
-      <Button
-        variant="contained"
-        disabled={!hasFile}
-        onClick={onUpload}
-      >
-        Upload
-      </Button>
+    <Button
+  variant="contained"
+  disabled={!hasFile || isUploading}
+  onClick={onUpload}
+>
+  {isUploading ? "Uploading..." : "Upload"}
+</Button>
     </Stack>
   );
 }

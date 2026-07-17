@@ -12,10 +12,12 @@ import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
 
 interface UploadCardProps {
   onFileSelect: (file: File) => void;
+  isUploading: boolean;
 }
 
 export default function UploadCard({
   onFileSelect,
+  isUploading,
 }: UploadCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -70,6 +72,7 @@ export default function UploadCard({
         </Typography>
 
         <Button
+          disabled={isUploading}
           variant="contained"
           size="large"
           onClick={handleBrowseClick}
