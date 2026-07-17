@@ -1,5 +1,8 @@
+import os
+
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
+
 from app.models.enums import InvestigationStatus
 from app.repositories.log_repository import LogRepository
 from app.services.investigation_service import InvestigationService
@@ -19,44 +22,67 @@ class UploadService:
         file: UploadFile,
     ):
 
-        allowed_extensions = {
-            ".log",
-            ".txt",
-            ".json",
-            ".evtx",
-        }
+        saved_file = None
 
-        extension = "." + file.filename.split(".")[-1].lower()
+        try:
 
-        if extension not in allowed_extensions:
-            raise ValueError(
-                f"Unsupported file type: {extension}"
+            allowed_extensions = {
+                ".log",
+                ".txt",
+                ".json",
+                ".evtx",
+            }
+
+            extension = "." + file.filename.split(".")[-1].lower()
+
+            if extension not in allowed_extensions:
+                raise ValueError(
+                    f"Unsupported file type: {extension}"
+                )
+
+            # Save uploaded file
+            saved_file = await self.repository.save_file(file)
+
+            # Create investigation
+            investigation = self.investigation_service.create_investigation(
+                db=db,
+                original_filename=saved_file.original_file_name,
+                stored_filename=saved_file.stored_file_name,
+                file_size=saved_file.file_size,
             )
 
-        # Save uploaded file
-        saved_file = await self.repository.save_file(file)
+            # Parse uploaded log
+            self.log_parser_service.parse_file(
+                db=db,
+                investigation_id=investigation.id,
+                file_path=saved_file.file_path,
+            )
 
-        # Create Investigation
-        investigation = self.investigation_service.create_investigation(
-            db=db,
-            original_filename=saved_file.original_file_name,
-            stored_filename=saved_file.stored_file_name,
-            file_size=saved_file.file_size,
-        )
+            # Update investigation status
+            self.investigation_service.update_status(
+                db=db,
+                investigation=investigation,
+                status=InvestigationStatus.PARSING,
+            )
 
-        self.log_parser_service.parse_file(
-            db=db,
-            investigation_id=investigation.id,
-            file_path=saved_file.file_path,
-        )
+            # Commit everything as one transaction
+            db.commit()
+            db.refresh(investigation)
 
-        self.investigation_service.update_status(
-            db=db,
-            investigation=investigation,
-            status=InvestigationStatus.PARSING,
-        )
+            return investigation
 
-        db.commit()
-        db.refresh(investigation)
+        except Exception as ex:
 
-        return investigation
+            # Roll back all database changes
+            db.rollback()
+
+            # Remove uploaded file from disk
+            if (
+                saved_file
+                and os.path.exists(saved_file.file_path)
+            ):
+                os.remove(saved_file.file_path)
+
+            print(f"Upload failed: {ex}")
+
+            raise
